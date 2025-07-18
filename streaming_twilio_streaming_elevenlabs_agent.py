@@ -32,7 +32,7 @@ SYSTEM_MESSAGE = PROMPT
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
-CALL_TO_PHONE = "+551150391560"
+CALL_TO_PHONE = "+5541995659361"
 
 # Inicializa o cliente Twilio
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -85,31 +85,68 @@ def convert_ulaw_to_pcm(ulaw_audio_base64):
         log_error("❌", f"Erro na conversão ulaw->pcm: {e}")
         return None
 
+def add_room_effect(audio):
+    # Cria um efeito de eco/reverb
+    echo = audio.overlay(audio - 3, position=50)  # -3dB mais baixo, 50ms de delay
+    return echo
+
+def generate_ambient_noise(duration_ms):
+    """Gera um ruído branco suave para simular ambiente"""
+    import numpy as np
+    
+    # Gera ruído branco
+    sample_rate = 8000
+    samples = int((duration_ms / 1000.0) * sample_rate)
+    noise = np.random.normal(0, 0.1, samples)
+    
+    # Converte para bytes
+    noise_bytes = (noise * 32767).astype(np.int16).tobytes()
+    
+    # Converte para μ-law
+    ulaw_data = audioop.lin2ulaw(noise_bytes, 2)
+    
+    # Retorna em base64
+    return base64.b64encode(ulaw_data).decode('utf-8')
+
 def convert_elevenlabs_to_ulaw(audio_data):
     """Converte áudio do Elevenlabs para G711 μ-law"""
     try:
-        # Cria um buffer de bytes para o áudio
-        audio_buffer = BytesIO(audio_data)
-        
         # Carrega o áudio como PCM
         audio = AudioSegment(
             data=audio_data,
-            sample_width=2,  # 16-bit
-            frame_rate=16000,  # Taxa intermediária controla a velocidade da voz
-            channels=1  # mono
+            sample_width=2,
+            frame_rate=16000,
+            channels=1
         )
+        
+        # Gera ruído do mesmo tamanho do áudio
+        noise_base64 = generate_ambient_noise(len(audio))
+        noise_bytes = base64.b64decode(noise_base64)
+        noise_pcm = audioop.ulaw2lin(noise_bytes, 2)
+        
+        # Cria AudioSegment do ruído
+        noise_audio = AudioSegment(
+            data=noise_pcm,
+            sample_width=2,
+            frame_rate=8000,
+            channels=1
+        ).set_frame_rate(16000)  # Converte para mesma taxa do áudio
+        
+        # Reduz volume do ruído
+        #noise_audio = noise_audio - 30  # -30dB
+        
+        # Mixa o áudio com o ruído
+        #audio = audio.overlay(noise_audio)
         
         # Converte para 8kHz (taxa do Twilio)
         audio = audio.set_frame_rate(8000)
         
         # Converte para μ-law
         pcm_data = audio.raw_data
-        ulaw_data = audioop.lin2ulaw(pcm_data, 2)  # 2 bytes por amostra (16-bit)
+        ulaw_data = audioop.lin2ulaw(pcm_data, 2)
         
         # Codifica em base64
         ulaw_base64 = base64.b64encode(ulaw_data).decode('utf-8')
-        
-        log_info("🔄", f"Áudio convertido para ulaw: {len(ulaw_data)} bytes")
         return ulaw_base64
 
     except Exception as e:
@@ -283,9 +320,6 @@ async def index_page():
 async def handle_incoming_call(request: Request):
     """Handle incoming call and return TwiML response to connect to Media Stream."""
     response = VoiceResponse()
-    response.say("Por favor, aguarde")
-    response.pause(length=1)
-    response.say("OK, você pode começar a falar!")
     host = request.url.hostname
     connect = Connect()
     connect.stream(url=f'wss://{host}/media-stream')

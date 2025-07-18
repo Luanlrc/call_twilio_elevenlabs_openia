@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-AGENT_ID = os.getenv("AGENT_ID")
+ELEVENLABS_AGENT_ID = os.getenv("ELEVENLABS_AGENT_ID")
 
 # Inicializa o cliente ElevenLabs com sua chave API
 client = ElevenLabs(
@@ -28,7 +28,7 @@ def on_agent_response_correction(original: str, correction: str):
     print(f"Corrigido: {correction}")
 
 def main():
-    agent_id = AGENT_ID
+    agent_id = ELEVENLABS_AGENT_ID
     config = ConversationInitiationData()
     audio_interface = DefaultAudioInterface()
     
