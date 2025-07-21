@@ -3,21 +3,16 @@ import json
 import base64
 import audioop
 import asyncio
-import websockets
-from io import BytesIO
 from pydub import AudioSegment
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.websockets import WebSocketDisconnect
-from twilio.twiml.voice_response import VoiceResponse, Connect, Say, Stream
+from twilio.twiml.voice_response import VoiceResponse, Connect
 from twilio.rest import Client
 from dotenv import load_dotenv
 from elevenlabs import ElevenLabs
 from elevenlabs.conversational_ai.conversation import ConversationInitiationData, Conversation, AudioInterface
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
-from convert_mp3_bytes_to_law_base64 import convert_mp3_bytes_to_g711ulaw_base64
 from prompt import PROMPT
-import tempfile
 import time
 
 load_dotenv()
