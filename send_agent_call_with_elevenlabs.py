@@ -4,6 +4,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+"""
+Script para iniciar chamadas telefônicas automatizadas usando ElevenLabs e Twilio.
+
+Este script permite realizar chamadas de saída (outbound) utilizando um agente virtual
+da ElevenLabs. O agente é capaz de manter uma conversa natural usando voz sintetizada
+de alta qualidade.
+
+Requisitos:
+    - Chave API ElevenLabs configurada
+    - ID do agente ElevenLabs configurado
+    - ID do número de telefone ElevenLabs configurado
+    - Número de telefone de destino válido
+"""
+
 client = ElevenLabs(
     api_key=os.getenv("ELEVENLABS_API_KEY"),
 )

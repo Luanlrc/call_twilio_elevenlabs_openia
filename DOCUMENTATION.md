@@ -1,130 +1,152 @@
-# Integração Twilio + ElevenLabs Agent
+# Documentação do Sistema de Integração Twilio + ElevenLabs + OpenAI
 
-Este projeto implementa uma integração entre o Twilio (para chamadas telefônicas) e o ElevenLabs Agent (para conversação por voz). 
+## Sumário
+1. [Introdução](#introdução)
+2. [Arquitetura](#arquitetura)
+3. [Configuração](#configuração)
+4. [API Reference](#api-reference)
+5. [Guias de Uso](#guias-de-uso)
+6. [Solução de Problemas](#solução-de-problemas)
+7. [Limitações e Considerações](#limitações-e-considerações)
 
-## Visão Geral
+## Introdução
 
-O sistema permite:
-- Receber/fazer chamadas usando Twilio
-- Processar áudio bidirecional em tempo real
-- Conversar com um agente ElevenLabs
-- Interrupção natural da fala quando o usuário começa a falar
+### Visão Geral
+Este projeto implementa uma integração entre três serviços principais:
+- **Twilio**: Gerenciamento de chamadas telefônicas
+- **OpenAI**: Processamento de linguagem natural em tempo real
+- **ElevenLabs**: Síntese de voz de alta qualidade
 
-## Principais Componentes
+### Funcionalidades Principais
+- Recebimento e realização de chamadas via Twilio
+- Processamento de áudio bidirecional em tempo real
+- Conversação natural com IA usando OpenAI
+- Síntese de voz com ElevenLabs
+- Interrupção natural da fala
 
-1. **TwilioAudioInterface**: 
-   - Implementa a interface de áudio para o ElevenLabs
-   - Gerencia a conversão de áudio entre os formatos
-   - Controla o fluxo de áudio bidirecional
+## Arquitetura
 
-2. **FastAPI Server**:
-   - Gerencia endpoints para Twilio
-   - Manipula WebSockets para streaming de áudio
-   - Processa eventos da chamada
+### Componentes do Sistema
+1. **Servidor FastAPI**
+   - Endpoints para Twilio
+   - Gerenciamento de WebSockets
+   - Processamento de eventos
 
-## Problemas Encontrados e Soluções
+2. **Interfaces de Áudio**
+   - Conversão entre formatos (G711 μ-law ↔ PCM)
+   - Streaming bidirecional
+   - Controle de buffer
 
-### 1. Conversão de Áudio
+3. **Integrações**
+   - Twilio Media Streams
+   - OpenAI Realtime API
+   - ElevenLabs Voice Synthesis
 
-**Problema**: O Twilio usa G711 μ-law enquanto o ElevenLabs usa formatos diferentes.
-
-**Solução**: 
-- Implementamos conversão bidirecional entre formatos
-- Usamos `audioop` para conversão PCM ↔ μ-law
-- Ajustamos taxas de amostragem para compatibilidade
-
-```python
-def convert_elevenlabs_to_ulaw(audio_data):
-    audio = AudioSegment(
-        data=audio_data,
-        sample_width=2,
-        frame_rate=16000,  # Taxa intermediária controla a velocidade da voz
-        channels=1
-    )
-    audio = audio.set_frame_rate(8000)  # Taxa do Twilio
-```
-
-### 2. Velocidade da Voz
-
-**Problema**: A voz do agente estava muito lenta/rápida devido a diferenças nas taxas de amostragem.
-
-**Solução**:
-- Ajustamos a taxa de amostragem para 16kHz na entrada
-- Convertemos para 8kHz para Twilio
-- Adicionamos controle de velocidade via `frame_rate`
-
-### 3. Streaming de Áudio
-
-**Problema**: Envio de áudio em blocos grandes causava latência.
-
-**Solução**:
-- Implementamos streaming em chunks de 20ms
-- Adicionamos pequenas pausas entre chunks
-- Melhoramos a fluidez da conversa
-
-```python
-chunk_size = int(8000 * 2 * self._chunk_duration / 1000)
-chunks = [audio_payload[i:i+chunk_size] for i in range(0, len(audio_payload), chunk_size)]
-```
-
-### 4. Interrupção de Fala
-
-**Problema**: Necessidade de interromper o agente quando o usuário começa a falar.
-
-**Solução**:
-- Implementamos detecção de voz (VAD)
-- Sistema de interrupção com limpeza de buffer
-- Controle de estado de fala
-
-```python
-async def handle_speech_started(self):
-    if self.agent_is_speaking:
-        self.interrupt()
-        await self._send_clear_event()
-```
+### Fluxo de Dados
+1. Entrada de Áudio (Twilio → Sistema)
+2. Processamento de Fala (OpenAI)
+3. Geração de Resposta (OpenAI → ElevenLabs)
+4. Síntese de Voz (ElevenLabs)
+5. Saída de Áudio (Sistema → Twilio)
 
 ## Configuração
 
-### Variáveis de Ambiente (.env)
-```
+### Pré-requisitos
+- Python 3.9+
+- Conta Twilio ativa
+- Chave API OpenAI
+- Conta ElevenLabs
+
+### Variáveis de Ambiente
+```env
 ELEVENLABS_API_KEY="sua_chave"
-AGENT_ID="id_do_agente"
+ELEVENLABS_AGENT_ID="id_do_agente"
+OPENAI_API_KEY="sua_chave_openai"
 TWILIO_ACCOUNT_SID="seu_sid"
 TWILIO_AUTH_TOKEN="seu_token"
 TWILIO_PHONE_NUMBER="+1234567890"
 ```
 
-### Twilio
-1. Comprar número de telefone
-2. Configurar webhook para seu servidor
+### Configuração dos Serviços
+
+#### Twilio
+1. Adquirir número de telefone
+2. Configurar webhook (URL do seu servidor)
 3. Habilitar Media Streams
+4. Configurar TwiML para streaming
 
-### ElevenLabs
+#### OpenAI
+1. Obter API key
+2. Configurar modelo GPT-4
+3. Ajustar parâmetros de streaming
+
+#### ElevenLabs
 1. Criar agente conversacional
-2. Configurar prompt do agente
-3. Obter API Key e Agent ID
+2. Configurar voz e parâmetros
+3. Obter API key e Agent ID
 
-## Ajustes Finos
+## API Reference
 
-### Velocidade da Voz
-- Controlada por `frame_rate` na conversão de áudio
-- 16kHz = velocidade padrão
-- Ajustável conforme necessidade
+### Endpoints
 
-### Qualidade do Áudio
-- Formato: PCM 16-bit
-- Taxa de amostragem: 8kHz (Twilio)
-- Chunks de 20ms para streaming
+#### POST /incoming-call
+Recebe chamadas do Twilio e inicia sessão.
 
-## Limitações Conhecidas
+#### WebSocket /media-stream
+Gerencia streaming de áudio bidirecional.
 
+### Formatos de Áudio
+- **Entrada**: G711 μ-law (8kHz)
+- **Processamento**: PCM 16-bit
+- **Saída**: G711 μ-law (8kHz)
+
+## Guias de Uso
+
+### Iniciando uma Chamada
+```python
+# Exemplo de código para iniciar chamada
+```
+
+### Configurando Prompts
+```python
+# Exemplo de configuração de prompts
+```
+
+### Ajustes de Performance
+- Tamanho do buffer: 20ms
+- Taxa de amostragem: 8kHz
+- Controle de latência
+
+## Solução de Problemas
+
+### Problemas Comuns e Soluções
+
+#### 1. Conversão de Áudio
+- **Problema**: Incompatibilidade de formatos
+- **Solução**: Conversão automática via `audioop`
+
+#### 2. Latência
+- **Problema**: Atrasos na resposta
+- **Solução**: Otimização de buffers e streaming
+
+#### 3. Interrupção de Fala
+- **Problema**: Sobreposição de vozes
+- **Solução**: Sistema VAD e controle de buffer
+
+## Limitações e Considerações
+
+### Limitações Atuais
 1. Latência inicial na primeira resposta
 2. Possível eco em algumas condições
 3. Dependência de conexão estável
 
-## Próximos Passos
+### Boas Práticas
+1. Monitorar uso de API
+2. Implementar fallbacks
+3. Manter logs de erro
 
+### Próximos Passos
 1. Melhorar detecção de voz
 2. Reduzir latência inicial
-3. Implementar fallback para conexões instáveis
-4. Adicionar métricas e monitoramento 
+3. Implementar métricas
+4. Adicionar testes automatizados 

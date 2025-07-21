@@ -1,98 +1,122 @@
-# Assistente de Voz com Twilio Voice e OpenAI Realtime API (Python)
+# Assistente de Voz com Twilio, OpenAI e ElevenLabs
 
-Esta aplicação demonstra como usar Python, [Twilio Voice](https://www.twilio.com/docs/voice) e [Media Streams](https://www.twilio.com/docs/voice/media-streams), e [OpenAI's Realtime API](https://platform.openai.com/docs/) para fazer uma chamada telefônica e conversar com um Assistente de IA.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 
-A aplicação abre websockets com a OpenAI Realtime API e Twilio, e envia áudio de voz de um para o outro para permitir uma conversa bidirecional.
+Sistema de conversação por voz que integra:
+- [Twilio Voice](https://www.twilio.com/docs/voice) para chamadas telefônicas
+- [OpenAI Realtime API](https://platform.openai.com/docs/) para processamento de linguagem natural
+- [ElevenLabs](https://elevenlabs.io/) para síntese de voz de alta qualidade
 
-Esta aplicação usa os seguintes produtos Twilio em conjunto com a API Realtime da OpenAI:
-- Voz (e TwiML, Media Streams)
-- Números de Telefone
+## 🌟 Funcionalidades
 
-> [!NOTA]
-> Chamadas de saída estão além do escopo deste aplicativo.
+- ☎️ Chamadas telefônicas bidirecionais via Twilio
+- 🤖 Processamento de linguagem natural em tempo real com OpenAI
+- 🗣️ Síntese de voz natural com ElevenLabs
+- ⚡ Streaming de áudio em tempo real
+- 🎯 Detecção de interrupção de fala
+- 🔄 Conversão automática entre formatos de áudio
 
-## Pré-requisitos
+## 🚀 Começando
 
-Para usar o aplicativo, você precisará de:
+### Pré-requisitos
 
-- **Python 3.9+** Usamos `3.9.13` para desenvolvimento; baixe [aqui](https://www.python.org/downloads/).
-- **Uma conta Twilio.** Você pode se inscrever para um teste gratuito [aqui](https://www.twilio.com/try-twilio).
-- **Um número Twilio com capacidades de _Voz_.** [Aqui estão as instruções](https://help.twilio.com/articles/223135247-How-to-Search-for-and-Buy-a-Twilio-Phone-Number-from-Console) para comprar um número de telefone.
-- **Uma conta OpenAI e uma Chave de API OpenAI.** Você pode se inscrever [aqui](https://platform.openai.com/).
-  - **Acesso à API Realtime da OpenAI.**
+- Python 3.9+ ([Download](https://www.python.org/downloads/))
+- Conta Twilio ([Criar conta](https://www.twilio.com/try-twilio))
+- Número Twilio com capacidade de voz ([Instruções](https://help.twilio.com/articles/223135247))
+- Conta OpenAI com acesso à API Realtime ([Registro](https://platform.openai.com/))
+- Conta ElevenLabs ([Registro](https://elevenlabs.io/))
 
-## Configuração Local
+### 🔧 Instalação
 
-Existem 4 etapas obrigatórias e 1 etapa opcional para colocar o aplicativo em funcionamento localmente para desenvolvimento e teste:
-1. Execute o ngrok ou outra solução de tunelamento para expor seu servidor local à internet para testes. Baixe o ngrok [aqui](https://ngrok.com/).
-2. (opcional) Crie e use um ambiente virtual
-3. Instale os pacotes
-4. Configuração do Twilio
-5. Atualize o arquivo .env
+1. **Clone o repositório**
+   ```bash
+   git clone https://github.com/seu-usuario/seu-repositorio.git
+   cd seu-repositorio
+   ```
 
-### Abra um túnel ngrok
-Ao desenvolver e testar localmente, você precisará abrir um túnel para encaminhar solicitações ao seu servidor de desenvolvimento local. Estas instruções usam ngrok.
+2. **Configure o ambiente virtual (recomendado)**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # ou
+   .\venv\Scripts\activate  # Windows
+   ```
 
-Abra um Terminal e execute:
+3. **Instale as dependências**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure as variáveis de ambiente**
+   ```bash
+   cp .env.example .env
+   # Edite o arquivo .env com suas chaves de API
+   ```
+
+### 📡 Configuração para Desenvolvimento
+
+1. **Inicie o túnel ngrok**
+   ```bash
+   ngrok http 5050
+   ```
+
+2. **Configure o Twilio**
+   - Acesse o [Console Twilio](https://console.twilio.com/)
+   - Em "Phone Numbers" > "Manage" > "Active Numbers"
+   - Configure o webhook para: `https://seu-tunnel.ngrok.app/incoming-call`
+
+3. **Inicie o servidor**
+   ```bash
+   python main.py
+   ```
+
+## 🎯 Uso
+
+1. Ligue para seu número Twilio configurado
+2. Aguarde a mensagem de boas-vindas
+3. Comece a conversar com o assistente
+
+### Recursos Avançados
+
+#### Configuração da IA Falando Primeiro
+```python
+# Em streaming_twilio_openia_agent.py
+# Descomente para a IA falar primeiro:
+await send_initial_conversation_item(openai_ws)
 ```
-ngrok http 5050
-```
-Depois que o túnel for aberto, copie a URL de `Forwarding`. Será algo como: `https://[seu-subdominio-ngrok].ngrok.app`. Você precisará disso ao configurar seu número Twilio.
 
-Observe que o comando `ngrok` acima encaminha para um servidor de desenvolvimento rodando na porta `5050`, que é a porta padrão configurada nesta aplicação.
+#### Ajuste de Interrupção de Fala
+O sistema detecta quando o usuário começa a falar e interrompe a IA automaticamente.
 
-Lembre-se que cada vez que você executar o comando `ngrok http`, uma nova URL será criada, e você precisará atualizá-la em todos os lugares onde ela é referenciada abaixo.
+## 📚 Documentação
 
-### (Opcional) Criar e usar um ambiente virtual
+Para informações detalhadas sobre:
+- Arquitetura do sistema
+- API Reference
+- Guias de uso
+- Solução de problemas
 
-Para reduzir a desordem em seu ambiente Python global em sua máquina, você pode criar um ambiente virtual. Na linha de comando, digite:
+Consulte nossa [Documentação Completa](DOCUMENTATION.md).
 
-```
-python3 -m venv env
-source env/bin/activate
-```
+## 🤝 Contribuindo
 
-### Instalar pacotes necessários
+Contribuições são bem-vindas! Por favor, leia nosso [Guia de Contribuição](CONTRIBUTING.md) e [Código de Conduta](CODE_OF_CONDUCT.md).
 
-No terminal (com o ambiente virtual, se você configurou) execute:
-```
-pip install -r requirements.txt
-```
+## 📝 Licença
 
-### Configuração do Twilio
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-#### Apontar um Número de Telefone para sua URL ngrok
-No [Console Twilio](https://console.twilio.com/), vá para **Phone Numbers** > **Manage** > **Active Numbers** e clique no número de telefone adicional que você comprou para este aplicativo nos **Pré-requisitos**.
+## ✨ Agradecimentos
 
-Nas configurações do seu Número de Telefone, atualize o primeiro dropdown **A call comes in** para **Webhook**, e cole sua URL de encaminhamento ngrok (referenciada acima), seguida de `/incoming-call`. Por exemplo, `https://[seu-subdominio-ngrok].ngrok.app/incoming-call`. Em seguida, clique em **Save configuration**.
+- Twilio pela infraestrutura de telefonia
+- OpenAI pela API de processamento de linguagem natural
+- ElevenLabs pela síntese de voz de alta qualidade
 
-### Atualizar o arquivo .env
+## 👤 Autor
 
-Crie um arquivo `/env`, ou copie o arquivo `.env.example` para `.env`:
-
-```
-cp .env.example .env
-```
-
-No arquivo .env, atualize o `OPENAI_API_KEY` com sua chave de API OpenAI dos **Pré-requisitos**.
-
-## Executar o aplicativo
-Uma vez que o ngrok esteja rodando, as dependências estejam instaladas, o Twilio esteja configurado corretamente e o `.env` esteja configurado, execute o servidor de desenvolvimento com o seguinte comando:
-```
-python main.py
-```
-## Testar o aplicativo
-Com o servidor de desenvolvimento em execução, ligue para o número de telefone que você comprou nos **Pré-requisitos**. Após a introdução, você poderá conversar com o Assistente de IA. Divirta-se!
-
-## Recursos especiais
-
-### Fazer a IA falar primeiro
-Para fazer o assistente de voz da IA falar antes do usuário, descomente a linha `# await send_initial_conversation_item(openai_ws)`. A saudação inicial é controlada em `async def send_initial_conversation_item(openai_ws)`.
-
-### Tratamento de interrupção/preempção da IA
-Quando o usuário fala e a OpenAI envia `input_audio_buffer.speech_started`, o código limpará o buffer do Twilio Media Streams e enviará `conversation.item.truncate` para a OpenAI.
-
-Dependendo das necessidades da sua aplicação, você pode querer usar o evento [`input_audio_buffer.speech_stopped`](https://platform.openai.com/docs/api-reference/realtime-server-events/input-audio-buffer-speech-stopped), ou uma combinação dos dois.
-
-## Desenvolvido por
 Desenvolvido por Luan Cordeiro
+
+---
+
+⭐️ Se este projeto te ajudou, considere dar uma estrela!
